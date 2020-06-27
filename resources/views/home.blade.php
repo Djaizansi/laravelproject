@@ -13,10 +13,7 @@
                             {{ session('status') }}
                         </div>
                     @endif
-
-                    <a href="{{route('wall')}}">Go to the Wall</a> <br>
-                    <a href="{{route('movie')}}">Go to the Movies</a><br>
-                    <a href="{{route('seance')}}">Go to the Seance</a>
+                    
                 </div>
             </div>
         </div>
