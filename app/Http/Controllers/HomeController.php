@@ -2,9 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Film;
-
 class HomeController extends Controller
 {
     /**
@@ -24,8 +21,7 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $movies = Film::all();
-        return view('home',['movies'=>$movies]);
+        return view('home');
         
     }
 }
