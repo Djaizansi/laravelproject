@@ -1,4 +1,6 @@
-<?php use Carbon\Carbon; ?>
+<?php
+use App\Location;
+use Carbon\Carbon; ?>
 
 @extends('layouts.app')
 <link href="{{ asset('css/card_voiture.css') }}" rel="stylesheet">
@@ -66,50 +68,74 @@
                         </a>
                 </div>
                 <h2 class="text-center">Les véhicules disponible maintenant</h2>
+                <?php $date_fin = isset($locateByUser) ? $locateByUser->date_fin : '';?>
+                @if (Carbon::today() < $date_fin)
+                    <p class="text-center" style="color: red;">Vous ne pourrez pas loué de véhicule car votre location actuelle n'est pas terminée</p>
+                @else
+                @endif
                 <br>
                 <div class="row justify-content-center">
                     @foreach($voiture as $uneVoiture)
-                    <div class="car-card">
-                        <div class="car-header img-media">
-                            <div class="header-icon-container">
-                                <img class="imgHeader" src="uploads/voitures/{{$uneVoiture->image}}" alt="voiture">
-                            </div>
-                        </div><!--car-header-->
-                        <div class="car-content">
-                            <div class="car-content-header">
-                                    <h3 class="car-title">{{$uneVoiture->marques->nom}} {{$uneVoiture->modeles->nom}}</h3>
-                                </a>
-                                <div class="imax-logo"></div>
-                            </div>
-                            <div class="car-info">
-                                <div class="info-section">
-                                    <label class="text-center">Date</label>
-                                    <span>{{Carbon::parse($uneVoiture->date_immat)->format('d/m/Y')}}</span>
-                                </div>
-                                <div class="info-section">
-                                    <label>Prix /jour</label>
-                                    <span>{{$uneVoiture->prix}} €</span>
-                                </div>
-                                <div class="info-section">
-                                    <label>Couleur</label>
-                                    <div id="carre" style="background-color:{{$uneVoiture->couleur}}; margin:0 auto;"></div>
-                                </div>
-                                <div class="info-section">
-                                    <label>Kilometrage</label>
-                                    <span>{{$uneVoiture->kilometrage}} Km</span>
-                                </div>
-                                @if (Auth::user()->roles === 'admin')
-                                    <div class="info-section">
-                                        <label>Actions</label>
-                                        <span><a href="{{route('delete', ['id' => $uneVoiture->id])}}"><i class="fas fa-trash" style="color:red;"></i></a> </span>
-                                        <span><a href="{{route('formUpdate', ['id' => $uneVoiture->id])}}"><i class="fas fa-pen"></i></a></span>
+                        <?php $id = $uneVoiture->id; ?>
+                        <?php $location = Location::where('id_voiture','=',$id)->get()->last(); ?>
+                        <?php $date_fin_vehicule = isset($location) ? $location->date_fin : '' ?>
+                            <div class="car-card">
+                                <div class="car-header img-media">
+                                    <div class="header-icon-container">
+                                        @if (Auth::user()->roles === 'admin')
+                                            <img class="imgHeader" src="uploads/voitures/{{$uneVoiture->image}}" alt="voiture">
+                                        @elseif (Auth::user()->roles === 'client' && !isset($location) && Carbon::today() >= $date_fin)
+                                            <a href="{{route('show',['id'=>$uneVoiture->id])}}"><img class="imgHeader" src="uploads/voitures/{{$uneVoiture->image}}" alt="voiture"></a>
+                                        @elseif(isset($location) && Carbon::today() >= $date_fin)
+                                            @if(Carbon::today() < $location->date_fin)
+                                                <img class="imgHeader" style="filter: grayscale(100%);" src="uploads/voitures/{{$uneVoiture->image}}" alt="voiture">
+                                            @elseif(Carbon::today() >= $location->date_fin)
+                                                <a href="{{route('show',['id'=>$uneVoiture->id])}}"><img class="imgHeader" src="uploads/voitures/{{$uneVoiture->image}}" alt="voiture"></a>
+                                            @endif
+                                        @elseif(isset($locateByUser) && Carbon::today() < $date_fin )
+                                            <img class="imgHeader" style="filter: grayscale(100%);" src="uploads/voitures/{{$uneVoiture->image}}" alt="voiture">
+                                        @endif
                                     </div>
-                                @endif
+                                </div><!--car-header-->
+                                <div class="car-content">
+                                    <div class="car-content-header">
+                                        @if (!isset($location))
+                                            <h3 class="car-title">{{$uneVoiture->marques->nom}} {{$uneVoiture->modeles->nom}}</h3>
+                                        @elseif (isset($location))
+                                            <h3 class="car-title">{{$uneVoiture->marques->nom}} {{$uneVoiture->modeles->nom}} <?= Carbon::today() < $location->date_fin ? '(Louée) Dispo '.Carbon::parse($location->date_fin)->format('d/m/Y') : ''?></h3>
+                                        @endif
+                                        <div class="imax-logo"></div>
+                                    </div>
+                                    <div class="car-info">
+                                        <div class="info-section">
+                                            <label class="text-center">Date</label>
+                                            <span>{{Carbon::parse($uneVoiture->date_immat)->format('d/m/Y')}}</span>
+                                        </div>
+                                        <div class="info-section">
+                                            <label>Prix /jour</label>
+                                            <span>{{$uneVoiture->prix}} €</span>
+                                        </div>
+                                        <div class="info-section">
+                                            <label>Couleur</label>
+                                            <div id="carre" style="background-color:<?=$uneVoiture->couleur?>; margin:0 auto;"></div>
+                                        </div>
+                                        <div class="info-section">
+                                            <label>Kilometrage</label>
+                                            <span>{{$uneVoiture->kilometrage}} Km</span>
+                                        </div>
+                                        @if (Auth::user()->roles === 'admin' && $date_fin_vehicule <= Carbon::today())
+                                            <div class="info-section">
+                                                <label>Actions</label>
+                                                <span><a href="{{route('formUpdate', ['id' => $uneVoiture->id])}}"><i class="fas fa-pen"></i></a></span>
+                                                <span><a style="background-color: #fff !important; border: none !important;" href="{{route('delete', ['id' => $uneVoiture->id])}}" onclick="return confirm('Etes vous sûre de vouloir supprimer cette voiture ?');"><i class="fas fa-trash" style="color:red;"></i></a></span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                @endforeach
+                    @endforeach
                 </div>
+
         </div>
 
     <script>
